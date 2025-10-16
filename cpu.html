@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CPU Scheduling Simulator</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f4f6f8;
+    color: #333;
+    margin: 0;
+    padding: 0;
+  }
+  header {
+    text-align: center;
+    padding: 20px;
+    background: #004080;
+    color: #fff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  h1 {
+    margin: 0;
+    font-size: 2em;
+  }
+  p {
+    margin: 5px 0 0 0;
+    font-size: 1em;
+    color: #cce0ff;
+  }
+  .controls {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px auto;
+    width: 95%;
+    max-width: 1000px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  }
+  .controls label {
+    margin-right: 5px;
+    font-weight: 600;
+    color: #004080;
+  }
+  .controls select,
+  .controls input {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    margin-right: 10px;
+    font-size: 0.95em;
+  }
+  button {
+    margin: 4px;
+    padding: 10px 16px;
+    border-radius: 6px;
+    border: none;
+    background: #004080;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.3s;
+    font-size: 0.95em;
+  }
+  button:hover {
+    background: #0066cc;
+  }
+  #processes {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 20px;
+    gap: 15px;
+  }
+  .process {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    margin: 5px;
+    padding: 12px 15px;
+    border-radius: 8px;
+    width: 130px;
+    min-height: 130px;
+    color: #333;
+    font-weight: 600;
+    text-align: left;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: 0.3s;
+  }
+  .process.running {
+    background: #0073e6;
+    color: #fff;
+    box-shadow: 0 0 12px #0073e6;
+  }
+  .process.waiting {
+    background: #ffa500;
+    color: #fff;
+    box-shadow: 0 0 10px #ffa500;
+  }
+  .process.completed {
+    background: #28a745;
+    color: #fff;
+    box-shadow: 0 0 10px #28a745;
+  }
+  .process label {
+    font-weight: 600;
+    font-size: 0.9em;
+    margin-top: 6px;
+  }
+  .process input {
+    width: 100%;
+    margin-top: 3px;
+    padding: 5px;
+    font-size: 1em;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+  #gantt {
+    background: #fff;
+    margin: 20px auto;
+    padding: 15px;
+    border-radius: 8px;
+    min-height: 60px;
+    max-width: 95%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: start;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  }
+  .gantt-block {
+    padding: 5px 12px;
+    border-radius: 4px;
+    color: #fff;
+    font-weight: 600;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: #0073e6;
+  }
+  #log {
+    background: #fff;
+    height: 200px;
+    overflow-y: auto;
+    margin: 20px auto;
+    padding: 10px;
+    border-radius: 8px;
+    width: 95%;
+    max-width: 1000px;
+    text-align: left;
+    font-family: 'Courier New', Courier, monospace;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  }
+  .log-running {
+    color: #0073e6;
+  }
+  .log-completed {
+    color: #28a745;
+  }
+  .log-info {
+    color: #004080;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>CPU Scheduling</h1>
+  <p>Interactive CPU Scheduling Visualizer - FCFS, SJF, Round Robin, Priority</p>
+</header>
+
+<div class="controls">
+  <div>
+    <label>Algorithm:</label>
+    <select id="algo">
+      <option value="fcfs">FCFS</option>
+      <option value="sjf">SJF</option>
+      <option value="rr">Round Robin</option>
+      <option value="priority">Priority</option>
+    </select>
+  </div>
+  <div>
+    <label>Processes:</label>
+    <input type="number" id="processCount" min="2" max="12" value="5" />
+  </div>
+  <div>
+    <label>Time Quantum:</label>
+    <input type="number" id="timeQuantum" min="1" value="2" />
+  </div>
+  <div>
+    <label>Speed:</label>
+    <select id="speed">
+      <option value="1000">Very Slow</option>
+      <option value="600">Slow</option>
+      <option value="300" selected>Normal</option>
+      <option value="150">Fast</option>
+      <option value="50">Very Fast</option>
+    </select>
+  </div>
+  <div>
+    <button id="startBtn">Start</button>
+    <button id="pauseBtn">Pause</button>
+    <button id="resetBtn">Reset</button>
+  </div>
+</div>
+
+<div id="processes"></div>
+<div id="gantt"></div>
+<div id="log"></div>
+
+<script>
+  let processes = [],
+    running = false,
+    paused = false,
+    interval;
+
+  function log(msg, cls = "log-info") {
+    const t = new Date().toLocaleTimeString();
+    const e = document.createElement("div");
+    e.className = cls;
+    e.textContent = `[${t}] ${msg}`;
+    document.getElementById("log").prepend(e);
+  }
+
+  function resetSimulation() {
+    clearInterval(interval);
+    processes = [];
+    document.getElementById("processes").innerHTML = "";
+    document.getElementById("gantt").innerHTML = "";
+    document.getElementById("log").innerHTML = "";
+    running = false;
+    paused = false;
+  }
+
+  function createProcesses() {
+    const n = +document.getElementById("processCount").value;
+    const div = document.getElementById("processes");
+    div.innerHTML = "";
+    processes = [];
+
+    for (let i = 0; i < n; i++) {
+      const el = document.createElement("div");
+      el.className = "process waiting";
+
+      // Process Name
+      const title = document.createElement("div");
+      title.textContent = `P${i + 1}`;
+      title.style.marginBottom = "6px";
+      el.appendChild(title);
+
+      // Burst Time Label and Input
+      const burstLabel = document.createElement("label");
+      burstLabel.textContent = "Burst Time:";
+      el.appendChild(burstLabel);
+
+      const burstInput = document.createElement("input");
+      burstInput.type = "number";
+      burstInput.min = 1;
+      burstInput.value = Math.floor(Math.random() * 10) + 1;
+      burstInput.title = "Burst Time";
+      el.appendChild(burstInput);
+
+      // Priority Label and Input
+      const prioLabel = document.createElement("label");
+      prioLabel.textContent = "Priority:";
+      el.appendChild(prioLabel);
+
+      const prioInput = document.createElement("input");
+      prioInput.type = "number";
+      prioInput.min = 1;
+      prioInput.value = Math.floor(Math.random() * 5) + 1;
+      prioInput.title = "Priority";
+      el.appendChild(prioInput);
+
+      div.appendChild(el);
+
+      processes.push({
+        id: i,
+        name: `P${i + 1}`,
+        burstInput,
+        prioInput,
+        burst: 0,
+        remaining: 0,
+        priority: 0,
+        state: "waiting",
+        el,
+      });
+    }
+  }
+
+  function runSimulation() {
+    const algo = document.getElementById("algo").value;
+    const speed = +document.getElementById("speed").value;
+    const tq = +document.getElementById("timeQuantum").value;
+
+    // Before starting, read the user input values for burst and priority:
+    for (let p of processes) {
+      const burstVal = parseInt(p.burstInput.value);
+      const prioVal = parseInt(p.prioInput.value);
+      if (isNaN(burstVal) || burstVal <= 0) {
+        alert(`Invalid Burst Time for ${p.name}`);
+        resetSimulation();
+        return;
+      }
+      if (isNaN(prioVal) || prioVal <= 0) {
+        alert(`Invalid Priority for ${p.name}`);
+        resetSimulation();
+        return;
+      }
+      p.burst = burstVal;
+      p.remaining = burstVal;
+      p.priority = prioVal;
+      p.state = "waiting";
+      p.el.className = "process waiting";
+    }
+
+    // Setup queue based on algorithm:
+    let queue = processes.slice();
+    if (algo === "sjf")
+      queue.sort((a, b) => a.burst - b.burst);
+    else if (algo === "priority")
+      queue.sort((a, b) => a.priority - b.priority);
+
+    let time = 0;
+
+    interval = setInterval(() => {
+      if (paused) return;
+
+      let proc;
+      if (algo !== "rr") {
+        proc = queue.find((p) => p.state !== "completed");
+      } else {
+        proc = queue.find((p) => p.remaining > 0);
+      }
+
+      if (!proc) {
+        clearInterval(interval);
+        log("All processes completed", "log-completed");
+        running = false;
+        return;
+      }
+
+      proc.state = "running";
+      proc.el.className = "process running";
+      log(`${proc.name} is running`, "log-running");
+
+      let runTime = algo === "rr" ? Math.min(proc.remaining, tq) : proc.remaining;
+
+      setTimeout(() => {
+        proc.remaining -= runTime;
+        time += runTime;
+
+        // Add to Gantt chart
+        const block = document.createElement("div");
+        block.className = "gantt-block";
+        block.textContent = proc.name;
+        document.getElementById("gantt").appendChild(block);
+
+        if (proc.remaining <= 0) {
+          proc.state = "completed";
+          proc.el.className = "process completed";
+          log(`${proc.name} completed`, "log-completed");
+        } else if (algo === "rr") {
+          proc.state = "waiting";
+          proc.el.className = "process waiting";
+        }
+      }, speed * runTime);
+    }, speed);
+  }
+
+  document.getElementById("startBtn").onclick = () => {
+    if (running) return;
+    running = true;
+    createProcesses();
+    log("Processes created. Please adjust Burst Time and Priority if needed, then click Start again.");
+  };
+
+  document.getElementById("pauseBtn").onclick = () => {
+    if (!running) return;
+    paused = !paused;
+    log(paused ? "Simulation Paused" : "Simulation Resumed", "log-info");
+  };
+
+  document.getElementById("resetBtn").onclick = () => {
+    resetSimulation();
+    log("Simulation Reset", "log-info");
+  };
+
+  // Start the simulation only after burst and priority inputs are finalized:
+  // So we change Start button to work like:
+  // First click: create process inputs
+  // Second click: start simulation reading those inputs
+
+  let startClickCount = 0;
+  document.getElementById("startBtn").onclick = () => {
+    if (!running) {
+      running = true;
+      createProcesses();
+      log(
+        "Processes created. Please adjust Burst Time and Priority if needed, then click Start again."
+      );
+      startClickCount = 1;
+      return;
+    }
+
+    if (startClickCount === 1) {
+      startClickCount = 2;
+      runSimulation();
+      log("CPU Scheduling Simulation Started", "log-info");
+    }
+  };
+</script>
+</body>
+</html>
